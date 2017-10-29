@@ -116,7 +116,7 @@ s <- shinyServer(function(input, output) {
     text(x=quantile(x, 0.80), y=quantile(y, .39),
          labels= substitute(paste(text1, R^2, " = ", r.squared, sep=''), list(
            text1="\n", r.squared=round(summary(line.model)$r.squared, 4))),
-         adj=c(0.08,0))
+         adj=c(0,0))
     })
     
     # output$download_pdf <- downloadHandler(
