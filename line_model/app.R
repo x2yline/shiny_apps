@@ -38,7 +38,7 @@ s <- shinyServer(function(input, output) {
     if (any(is.na(y))) { y <-as.numeric(unlist(strsplit(input$vec2," "))) }
     cat("x:\n")
     cat(x)
-    cat("y:\n")
+    cat("\ny:\n")
     cat(y)
   }
   )
