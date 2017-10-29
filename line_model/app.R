@@ -56,7 +56,7 @@ s <- shinyServer(function(input, output) {
     }
     else {
       line.model <- lm(y~x)
-      cat("your line：\ny = ",
+      cat("直线方程：\ny = ",
           line.model$coefficients[1], 
           " + ", line.model$coefficients[2],
           "x", sep="")}
@@ -68,7 +68,7 @@ s <- shinyServer(function(input, output) {
         summary(line.model)$r.squared, sep="")
     cat("\n\nAdjusted R squared：\n",
         summary(line.model)$adj.r.squared, sep="")
-    cat("\n\np value：\n",
+    cat("\n\np值：\n",
         p.value, sep="")
   }
   )
