@@ -1,5 +1,5 @@
 library(shiny)
-
+# require(Cairo)
 u <- shinyUI(pageWithSidebar(
   
   headerPanel("输入数据进行直线拟合"),
@@ -15,11 +15,16 @@ u <- shinyUI(pageWithSidebar(
               "490nm OD 值"),
     textInput('vec5', '图形标题',
               "ELISA 标准拟合直线"),
-    br(),br()
+    br(),
+    submitButton("提交数据进行拟合"),
+    br(),
+    # downloadLink('downloadData', '下载pdf格式的图片')
+    uiOutput("pdfdownload")
     # downloadLink("download_pdf", "下载图片的pdf进行后续修改")
   ),
   
   mainPanel(
+    
     h4('拟合数据'),
     verbatimTextOutput("oid1"),
     h4('拟合结果'),
@@ -31,6 +36,57 @@ u <- shinyUI(pageWithSidebar(
 ))
 
 s <- shinyServer(function(input, output) {
+  
+  output$pdfdownload <- renderUI({
+    # require(Cairo)
+    # CairoPDF("www/line_model.pdf", width=8, height=6.7)
+    pdf("www/line_model.pdf",  width=8, height=6.7)
+    x <- as.numeric(unlist(strsplit(input$vec1,",")))
+    if (any(is.na(x))) { x <-as.numeric(unlist(strsplit(input$vec1," "))) }
+    y <- as.numeric(unlist(strsplit(input$vec2,",")))
+    if (any(is.na(y))) { y <-as.numeric(unlist(strsplit(input$vec2," "))) }
+    if (input$model){
+      line.model <- lm(y~x+0)
+      text1 <- paste("y = ", round(line.model$coefficients, 5),"x")
+    }
+    else {
+      line.model <- lm(y~x)
+      text1 <- paste("y = ", round(line.model$coefficients[2], 4),"x + ", round(line.model$coefficients[1], 4))
+    }
+    plot(x, y, pch=16,
+         xlab=input$vec3,
+         ylab=input$vec4,
+         bty="n",
+         xlim=c(min(x), max(x))+c(0, 0.2)*(max(x)-min(x))/5,
+         ylim=c(min(y), max(y))+c(0, 0.2)*(max(y)-min(y))/5,
+         main=input$vec5, axes=FALSE, family="GB1"
+    )
+    axis(2, at=round(seq(0, max(y), length=7), 2), las=2, tck=0.01, pos=0)
+    axis(1, at=round(seq(0, max(x), length=6), 2), las=1, tck=0.01, pos=0)
+    
+    
+    clip(-2, 120, -1, 1)
+    
+    arrows(100, 0, 105, 0, length=0.1)
+    arrows(0, max(y), 0, max(y)+0.1, length=0.1)
+    
+    clip(min(x), max(x), min(y), max(y)+(max(y)-min(y))/6)
+    abline(line.model, lwd=2, col="red")
+    
+    #
+    text(x=quantile(x, 0.80), y=quantile(y, .39),
+         labels= substitute(paste(text1, r.squared, sep=''), list(
+           text1=paste(text1, "\n"), r.squared="")),
+         adj=c(0,0))
+    text(x=quantile(x, 0.80), y=quantile(y, .39),
+         labels= substitute(paste(text1, R^2, " = ", r.squared, sep=''), list(
+           text1="\n", r.squared=round(summary(line.model)$r.squared, 4))),
+         adj=c(0,0))
+    dev.off()
+    tags$a(style="height:20; width:100%;",
+           href="line_model.pdf", target="_blank", "  下载pdf图片")
+  })
+  
   output$oid1<-renderPrint({
     x <- as.numeric(unlist(strsplit(input$vec1,",")))
     if (any(is.na(x))) { x <-as.numeric(unlist(strsplit(input$vec1," "))) }
@@ -50,7 +106,7 @@ s <- shinyServer(function(input, output) {
     if (any(is.na(y))) { y <-as.numeric(unlist(strsplit(input$vec2," "))) }
     if (input$model){
     line.model <- lm(y~x+0)
-    cat("your line：\ny = ",
+    cat("直线方程：\ny = ",
         line.model$coefficients[1],
         "x", sep="")
     }
@@ -64,10 +120,10 @@ s <- shinyServer(function(input, output) {
     p.value <- pf(f[1], f[2], f[3], lower.tail=F)
     
 
-    cat("\n\nR squared：\n",
+    cat("\n\n决定系数R方：\n",
         summary(line.model)$r.squared, sep="")
-    cat("\n\nAdjusted R squared：\n",
-        summary(line.model)$adj.r.squared, sep="")
+    # cat("\n\nAdjusted R squared：\n",
+    #     summary(line.model)$adj.r.squared, sep="")
     cat("\n\np值：\n",
         p.value, sep="")
   }
@@ -119,53 +175,8 @@ s <- shinyServer(function(input, output) {
          adj=c(0,0))
     })
     
-    # output$download_pdf <- downloadHandler(
-    #   contentType = "application/pdf",
-    #   filename = paste(input$vec5, '.pdf', sep=""),
-    #   content <- function(file){
-    #   pdf(file, width=7, height=5)
-    #   plot(1:10)
-    #   dev.off()})
-    #   {
-    #       x <- as.numeric(unlist(strsplit(input$vec1,",")))
-    #       if (any(is.na(x))) { x <-as.numeric(unlist(strsplit(input$vec1," "))) }
-    #       y <- as.numeric(unlist(strsplit(input$vec2,",")))
-    #       if (any(is.na(y))) { y <-as.numeric(unlist(strsplit(input$vec2," "))) }
-    #       if (input$model){
-    #         line.model <- lm(y~x+0)
-    #         text1 <- paste("y = ", round(line.model$coefficients, 5),"x")
-    #       }
-    #       else {
-    #         line.model <- lm(y~x)
-    #         text1 <- paste("y = ", round(line.model$coefficients[2], 4),"x + ", round(line.model$coefficients[1], 4))
-    #       }
-    #       plot(x, y, pch=16,
-    #            xlab=input$vec3,
-    #            ylab=input$vec4, 
-    #            bty="n",
-    #            xlim=c(min(x), max(x))+c(0, 0.2)*(max(x)-min(x))/5,
-    #            ylim=c(min(y), max(y))+c(0, 0.2)*(max(y)-min(y))/5,
-    #            main=input$vec5, axes=FALSE
-    #            )
-    #       axis(2, at=round(seq(0, max(y), length=7), 2), las=2, tck=0.01, pos=0)
-    #       axis(1, at=round(seq(0, max(x), length=6), 2), las=1, tck=0.01, pos=0)
-    #       
-    #       
-    #       clip(-2, 120, -1, 1)
-    #       
-    #       arrows(100, 0, 105, 0, length=0.1)
-    #       arrows(0, max(y), 0, max(y)+0.1, length=0.1)
-    #       
-    #       clip(min(x), max(x), min(y), max(y)+(max(y)-min(y))/6)
-    #       abline(line.model, lwd=2, col="red")
-    #       
-    #       #
-    #       text(x=quantile(x, 0.85), y=quantile(y, .45),
-    #            labels=text1, adj=c(0,0))
-    #       
-    #       text(x=quantile(x, 0.85), y=quantile(y, .39),
-    #            labels= latex2exp::TeX(paste("R^{2} =",round(summary(line.model)$r.squared, 4))),
-    #            adj=c(0,0))
+    
+
     #       dev.copy2pdf(file = "plot.pdf")
     #       
     #   },
