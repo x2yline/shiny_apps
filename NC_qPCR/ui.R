@@ -13,7 +13,7 @@
 library(shiny)
 require(ggplot2)
 require(plyr)
-
+require(gdata)
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   
@@ -27,14 +27,16 @@ shinyUI(fluidPage(
     sidebarPanel(
       
       # Input: Select a file ----
-      fileInput("file1", "选择CSV文件上传",
+      fileInput("file1", "选择原始excel表格数据上传",
                 multiple = FALSE,
-                accept = c("text/csv",
-                           "text/comma-separated-values,text/plain",
-                           ".csv")),
-      h5("CSV文件格式如下：", style="color:balck;"),
-      tableOutput("sample_csv"),
-      
+                accept = c(".xls", ".xlsx")),
+                # accept = c("text/csv",
+                #            "text/comma-separated-values,text/plain",
+                #            ".csv", ".xls", ".xlsx")),
+      # h5("如果上传CSV文件，则格式如下（列名称可随意）：", style="color:balck;"),
+      # tableOutput("sample_csv"),
+      # h5("选择原始数据表格", style="color:red;"),
+      # downloadButton('downloadxls', '点击下载示例excel表格', style="color:gray"),
       # Horizontal line ----
       tags$hr(),
       downloadButton('downloadcsv', '下载处理结果文件（csv格式）'),

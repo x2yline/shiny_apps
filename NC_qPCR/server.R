@@ -1,29 +1,30 @@
-#
-# This is the server logic of a Shiny web application. You can run the 
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-# 
-#    http://shiny.rstudio.com/
-#
-# packages <- c("ggplot2", "plyr")
-# if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
-#   install.packages(setdiff(packages, rownames(installed.packages())))  
-# }
 library(shiny)
-# install.packages("plyr", lib=".")
 require(ggplot2)
 require(plyr)
+
+require(gdata)
+read_qPCR_xls <- function(file) {
+    data_test <- read.xls(file, encoding = "UTF-8", stringsAsFactors = FALSE)
+    data_test_clean <- data_test[data_test[, 3] != "", ]
+    
+    sample_target_index <- which(apply(data_test_clean[1, ], 2, function(x) any(grepl(".[Nn]ame", 
+        x))))
+    Ct_index <- which(apply(data_test_clean[1, ], 2, function(x) any(grepl("^[Cc]", 
+        x))))[1]
+    
+    data_extract <- data_test_clean[, c(sample_target_index, Ct_index)]
+    return(data_extract[-1, ])
+}
 
 # Define server logic required to draw a histogram
 shinyServer( function(input, output) {
 
-  output$sample_csv <- renderTable({
-    head(read.csv("www/sample.csv", 
-                  header = TRUE, 
-                  stringsAsFactors=FALSE)[1:3])
-  }
-  )
+  # output$sample_csv <- renderTable({
+  #   head(read.csv("www/sample.csv", 
+  #                 header = TRUE, 
+  #                 stringsAsFactors=FALSE)[1:3], 2)
+  # }
+  # )
   
   raw_data_generate <- reactive({
     inFile <- input$file1
@@ -39,7 +40,7 @@ shinyServer( function(input, output) {
                   stringsAsFactors=FALSE)[, c(1, 2, 3)]
     	}
     	else {
-    		raw_data <- NULL
+    		raw_data <- read_qPCR_xls(inFile$datapath)
     	}
       
     }
@@ -114,7 +115,15 @@ shinyServer( function(input, output) {
       # write.csv(read.csv("www/qPCR_output.csv", header=TRUE), file, row.names=FALSE)
       }
   )
-
+  
+  # output$downloadxls <- downloadHandler(
+  #   filename = function() { paste('LHY-171004_data', '.xls', sep='') },
+  #   content = function(file) {
+  #     file.copy("LHY-171004_data.xls", file)
+  #     # write.csv(read.csv("www/qPCR_output.csv", header=TRUE), file, row.names=FALSE)
+  #     }
+  # )
+  
   output$downloadpng <- downloadHandler(
     filename =  function() {
       paste("result", input$type, sep=".")
